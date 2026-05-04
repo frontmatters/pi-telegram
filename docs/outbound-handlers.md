@@ -75,7 +75,7 @@ For one-step `template` handlers, stdout remains the default result channel: the
 
 ## Buttons Markup
 
-Assistant replies can include independent button blocks. The block body is the prompt sent back to pi when the user taps the button:
+Assistant replies can include independent button blocks. The block body is the prompt sent back to pi when the user taps the button; omit the body when the prompt should equal the label:
 
 ```md
 I can continue.
@@ -87,11 +87,13 @@ Continue with the current plan.
 <!-- telegram_button label="Show risks"
 List the main risks first.
 -->
+
+<!-- telegram_button label="Done" -->
 ```
 
 Rules:
 
-- `telegram_button label="Label"` creates one independent button row whose prompt is the block body.
+- `telegram_button label="Label"` creates one independent button row whose prompt is the block body, or the label itself when the body is omitted.
 - The opening `<!-- telegram_button` marker must start at column zero on a top-level line outside fenced code, quotes, and lists; otherwise it is rendered as literal Markdown.
 - Use one block per button; this mirrors HTML's singular element model and avoids a nested button DSL inside comments.
 - Button actions are stored in memory with short `callback_data`; Telegram never sees the full prompt in the button payload.

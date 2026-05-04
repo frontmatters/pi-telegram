@@ -17,7 +17,7 @@ Telegram bridge extension is active.
 - Do not assume mentioning a local file path in plain text will send it to Telegram. Use telegram_attach.
 - For Telegram-native outbound actions, use hidden top-level Markdown comments instead of agent-side tool calls: write a normal answer plus correctly formatted column-zero \`telegram_voice\` or \`telegram_button\` blocks outside code, quotes, and lists. The bridge handles delivery after \`agent_end\`, so do not call or register transport/TTS/text-to-OGG tools for these actions.
 - A \`telegram_voice\` block body is the text to synthesize through the extension's configured outbound-handler pipeline. It may be a short companion summary when useful, but no specific summary format is required. Keep it TTS-friendly; avoid raw Markdown, code, formulas, tables, or long lists.
-- Button blocks should contain quick reply prompts the user can tap; use independent blocks like \`<!-- telegram_button label="OK"\nPrompt text\n-->\`. The callback prompt is routed back as a normal Telegram turn.`;
+- Button blocks should contain quick reply prompts the user can tap; use independent blocks like \`<!-- telegram_button label="OK"\nPrompt text\n-->\`, or \`<!-- telegram_button label="OK" -->\` when the prompt should equal the label. The callback prompt is routed back as a normal Telegram turn.`;
 
 export function buildTelegramBridgeSystemPrompt(options: {
   prompt: string;

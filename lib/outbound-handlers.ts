@@ -101,6 +101,11 @@ interface TelegramTopLevelHtmlComment {
   end: number;
 }
 
+interface TelegramTopLevelFenceState {
+  marker: "`" | "~";
+  length: number;
+}
+
 function getMarkdownLineEnd(markdown: string, offset: number): number {
   const newlineIndex = markdown.indexOf("\n", offset);
   return newlineIndex === -1 ? markdown.length : newlineIndex + 1;
@@ -114,9 +119,29 @@ function getMarkdownLineText(
   return markdown.slice(offset, end).replace(/\r?\n$/, "");
 }
 
-function getTopLevelFenceMarker(line: string): "```" | "~~~" | undefined {
-  const match = line.match(/^(?: {0,3})(```|~~~)/);
-  return match?.[1] as "```" | "~~~" | undefined;
+function getTopLevelOpeningFence(
+  line: string,
+): TelegramTopLevelFenceState | undefined {
+  const match = line.match(/^(?: {0,3})(`{3,}|~{3,})/);
+  const sequence = match?.[1];
+  if (!sequence) return undefined;
+  return {
+    marker: sequence[0] as "`" | "~",
+    length: sequence.length,
+  };
+}
+
+function isTopLevelClosingFence(
+  line: string,
+  fence: TelegramTopLevelFenceState,
+): boolean {
+  const match = line.match(/^(?: {0,3})(`{3,}|~{3,})([ \t]*)$/);
+  const sequence = match?.[1];
+  return (
+    !!sequence &&
+    sequence[0] === fence.marker &&
+    sequence.length >= fence.length
+  );
 }
 
 function collectTopLevelHtmlComments(markdown: string): {
@@ -125,18 +150,18 @@ function collectTopLevelHtmlComments(markdown: string): {
 } {
   const comments: TelegramTopLevelHtmlComment[] = [];
   let offset = 0;
-  let fenceMarker: "```" | "~~~" | undefined;
+  let fence: TelegramTopLevelFenceState | undefined;
   while (offset < markdown.length) {
     const lineEnd = getMarkdownLineEnd(markdown, offset);
     const line = getMarkdownLineText(markdown, offset, lineEnd);
-    if (fenceMarker) {
-      if (line.startsWith(fenceMarker)) fenceMarker = undefined;
+    if (fence) {
+      if (isTopLevelClosingFence(line, fence)) fence = undefined;
       offset = lineEnd;
       continue;
     }
-    const nextFenceMarker = getTopLevelFenceMarker(line);
-    if (nextFenceMarker) {
-      fenceMarker = nextFenceMarker;
+    const nextFence = getTopLevelOpeningFence(line);
+    if (nextFence) {
+      fence = nextFence;
       offset = lineEnd;
       continue;
     }
@@ -174,19 +199,19 @@ function findTopLevelOpenOrPartialHtmlCommentIndex(markdown: string): number {
   const { openCommentStart } = collectTopLevelHtmlComments(markdown);
   if (openCommentStart !== undefined) return openCommentStart;
   let offset = 0;
-  let fenceMarker: "```" | "~~~" | undefined;
+  let fence: TelegramTopLevelFenceState | undefined;
   while (offset < markdown.length) {
     const lineEnd = getMarkdownLineEnd(markdown, offset);
     const line = getMarkdownLineText(markdown, offset, lineEnd);
     const isLastLine = lineEnd >= markdown.length;
-    if (fenceMarker) {
-      if (line.startsWith(fenceMarker)) fenceMarker = undefined;
+    if (fence) {
+      if (isTopLevelClosingFence(line, fence)) fence = undefined;
       offset = lineEnd;
       continue;
     }
-    const nextFenceMarker = getTopLevelFenceMarker(line);
-    if (nextFenceMarker) {
-      fenceMarker = nextFenceMarker;
+    const nextFence = getTopLevelOpeningFence(line);
+    if (nextFence) {
+      fence = nextFence;
       offset = lineEnd;
       continue;
     }
@@ -251,9 +276,8 @@ function normalizeMarkdownAfterVoiceExtraction(markdown: string): string {
 
 export function stripTelegramCommentMarkupForPreview(markdown: string): string {
   const withoutClosedBlocks = replaceTopLevelHtmlComments(markdown, () => "");
-  const openBlockIndex = findTopLevelOpenOrPartialHtmlCommentIndex(
-    withoutClosedBlocks,
-  );
+  const openBlockIndex =
+    findTopLevelOpenOrPartialHtmlCommentIndex(withoutClosedBlocks);
   const previewMarkdown =
     openBlockIndex >= 0
       ? withoutClosedBlocks.slice(0, openBlockIndex)
@@ -265,9 +289,8 @@ export function stripTelegramCommentMarkupForDelivery(
   markdown: string,
 ): string {
   const withoutClosedBlocks = replaceTopLevelHtmlComments(markdown, () => "");
-  const openBlockIndex = findTopLevelOpenOrPartialHtmlCommentIndex(
-    withoutClosedBlocks,
-  );
+  const openBlockIndex =
+    findTopLevelOpenOrPartialHtmlCommentIndex(withoutClosedBlocks);
   const deliveryMarkdown =
     openBlockIndex >= 0
       ? withoutClosedBlocks.slice(0, openBlockIndex)
@@ -343,7 +366,9 @@ function getVoiceReplyCompositionStepTimeout(
 ): number {
   const remaining = getRemainingVoiceReplyTimeout(handlerTimeout, startedAt);
   const stepTimeout = getVoiceReplyConfiguredTimeout(step);
-  return stepTimeout === undefined ? remaining : Math.min(stepTimeout, remaining);
+  return stepTimeout === undefined
+    ? remaining
+    : Math.min(stepTimeout, remaining);
 }
 
 function formatVoiceReplyExecutionFailure(
@@ -704,8 +729,8 @@ function parseButtonsCommentRows(
   body: string | undefined,
 ): TelegramOutboundButtonAction[][] {
   const attributes = parseButtonsCommentAttributes(head);
-  const prompt = body?.trim();
-  if (!attributes.label || !prompt) return [];
+  if (!attributes.label) return [];
+  const prompt = body?.trim() || attributes.label;
   return [[{ text: attributes.label, prompt }]];
 }
 

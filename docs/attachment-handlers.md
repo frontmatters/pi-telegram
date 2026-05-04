@@ -39,7 +39,7 @@ Attachment handlers support these built-in placeholders:
 
 `defaults` may provide additional placeholder values such as `{lang}` or `{model}`. `args` is only a string-array declaration of supported placeholders; defaults belong in `defaults` or inline placeholders such as `{lang=ru}`. Examples prefer explicit flag-style CLIs for readability, but positional forms such as `/path/to/stt {file} {lang=ru} {model=voxtral-mini-latest}` are equally valid when the target script supports them.
 
-If a top-level one-step handler template has no `{file}` placeholder, the downloaded file path is appended as the last command arg for backwards compatibility. Composition steps are plain command templates and do not receive implicit file-path args; include `{file}` explicitly where needed.
+If a top-level one-step handler template has no `{file}` placeholder, the downloaded file path is appended as the last command arg as a one-step handler convenience. Composition steps are plain command templates and do not receive implicit file-path args; include `{file}` explicitly where needed.
 
 ## Ordered Fallbacks
 

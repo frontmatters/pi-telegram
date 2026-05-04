@@ -93,3 +93,15 @@ test("Command template execution writes stdin without invoking a shell", async (
     killed: false,
   });
 });
+
+test("Command template timeout escalates when SIGTERM is ignored", async () => {
+  const startedAt = Date.now();
+  const result = await execCommandTemplate(
+    process.execPath,
+    ["-e", "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000);"],
+    { timeout: 500, killGrace: 10 },
+  );
+  assert.equal(result.killed, true);
+  assert.notEqual(result.code, 0);
+  assert.ok(Date.now() - startedAt < 2000);
+});
