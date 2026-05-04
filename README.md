@@ -171,7 +171,7 @@ A TTS plus MP3-to-OGG setup can be expressed as `template: [...]`. The bridge pr
 
 #### Buttons
 
-Button blocks attach inline quick replies to the final text. Use one independent `telegram_button` block per action; its `label` is shown in Telegram and its body is sent back to pi when tapped:
+Button blocks attach inline quick replies to the final text. Use one independent `telegram_button` block per action; its `label` is shown in Telegram and its body is sent back to pi when tapped. If the prompt should equal the label, the body can be omitted:
 
 ```md
 I can continue.
@@ -179,6 +179,8 @@ I can continue.
 <!-- telegram_button label="Continue"
 Continue with the current plan.
 -->
+
+<!-- telegram_button label="OK" -->
 ```
 
 Button prompts are routed back into the normal Telegram queue as prompt turns. Outbound handler details are documented in [`docs/outbound-handlers.md`](./docs/outbound-handlers.md).

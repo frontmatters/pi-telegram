@@ -176,6 +176,36 @@ test("Outbound comments inside fenced code stay literal", () => {
   assert.equal(stripTelegramCommentMarkupForPreview(markdown), markdown);
 });
 
+test("Outbound comments resume after indented and longer closing fences", () => {
+  const markdown = [
+    "Example:",
+    "",
+    "````md",
+    "<!-- telegram_button label=Skip -->",
+    "   ````",
+    "",
+    "<!-- telegram_button label=OK -->",
+  ].join("\n");
+  const actions: unknown[] = [];
+  const plan = planTelegramButtonReply(markdown, {
+    registerAction: (action) => {
+      actions.push(action);
+      return `btn:${actions.length}`;
+    },
+  });
+  assert.equal(
+    plan.markdown,
+    [
+      "Example:",
+      "",
+      "````md",
+      "<!-- telegram_button label=Skip -->",
+      "   ````",
+    ].join("\n"),
+  );
+  assert.deepEqual(actions, [{ text: "OK", prompt: "OK" }]);
+});
+
 test("Outbound action comments require top-level column-zero markers", () => {
   const markdown = [
     "Visible answer.",

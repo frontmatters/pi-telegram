@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1: Outbound Action & Command Timeout Hardening
+
+- `[Command Template Runtime]` Timed-out command templates now escalate from `SIGTERM` to `SIGKILL` when the child process does not exit. Impact: attachment and outbound-handler pipelines no longer hang forever on commands that ignore graceful termination.
+- `[Outbound Buttons]` `telegram_button` blocks may now omit the body when the callback prompt should equal the label. Impact: concise buttons such as `<!-- telegram_button label="OK" -->` work without duplicating the prompt text.
+- `[Outbound Comment Parsing]` Top-level outbound comments are now recognized again after fenced code blocks closed by Markdown-valid indented or longer fences. Impact: code examples stay literal while later `telegram_voice` and `telegram_button` blocks still execute correctly.
+- `[Command Template Docs]` The command-template contract now explicitly documents the strict 0.6.x shape: use `timeout`, and keep `args` as a string array of placeholder declarations. Impact: legacy `timeoutMs` and string-form `args` are not presented as supported compatibility paths.
+
 ## 0.6.0: Command Templates & Assistant-Authored Outbound Actions
 
 - `[Outbound Actions]` Assistant replies now use hidden `telegram_voice` and `telegram_button` blocks as Telegram-native action markup. Impact: text stays in the normal Markdown answer, voice block bodies become native OGG/Opus `sendVoice` messages, and button bodies become normal queued Telegram prompt turns without agent-side transport tool calls.

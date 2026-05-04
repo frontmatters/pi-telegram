@@ -33,6 +33,7 @@ export interface CommandTemplateExecOptions {
   timeout?: number;
   signal?: AbortSignal;
   stdin?: string;
+  killGrace?: number;
 }
 
 export interface CommandTemplateExecResult {
@@ -207,18 +208,20 @@ export function execCommandTemplate(
     let killed = false;
     let settled = false;
     let timeoutId: NodeJS.Timeout | undefined;
+    let killTimeoutId: NodeJS.Timeout | undefined;
     const killProcess = (): void => {
       if (killed) return;
       killed = true;
       proc.kill("SIGTERM");
-      setTimeout(() => {
-        if (!proc.killed) proc.kill("SIGKILL");
-      }, 5000);
+      killTimeoutId = setTimeout(() => {
+        if (!settled) proc.kill("SIGKILL");
+      }, options.killGrace ?? 5000);
     };
     const settle = (code: number): void => {
       if (settled) return;
       settled = true;
       if (timeoutId) clearTimeout(timeoutId);
+      if (killTimeoutId) clearTimeout(killTimeoutId);
       if (options.signal)
         options.signal.removeEventListener("abort", killProcess);
       resolve({ stdout, stderr, code, killed });
