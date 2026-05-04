@@ -49,9 +49,13 @@ Full text answer stays here.
 <!-- telegram_voice lang=ru rate=+30%
 Text to synthesize as a Telegram voice message.
 -->
+
+<!-- telegram_voice lang=ru rate=+30% text="Short spoken companion summary." -->
+
+<!-- telegram_voice: Short spoken companion summary. -->
 ```
 
-The bridge strips the comment from Telegram text. On `agent_end`, it maps each `telegram_voice` block to `type: "voice"`, generates one file per block, and sends each file as an independent Telegram-native voice message. The opening `<!-- telegram_voice` marker must start at column zero on a top-level line outside fenced code, quotes, and lists; otherwise it is rendered as literal Markdown.
+The bridge strips the comment from Telegram text. On `agent_end`, it maps each `telegram_voice` block to `type: "voice"`, generates one file per block, and sends each file as an independent Telegram-native voice message. The opening `<!-- telegram_voice` marker must start at column zero on a top-level line outside fenced code, quotes, and lists; otherwise it is rendered as literal Markdown. Body-form comments leave the opening line unclosed until the body-ending `-->`; closed heads can use `text="..."` for explicit one-line spoken text.
 
 ## Built-In Voice Placeholders
 
@@ -59,7 +63,7 @@ Voice outbound handlers receive these runtime placeholders:
 
 | Placeholder | Value                                                    |
 | ----------- | -------------------------------------------------------- |
-| `{text}`    | Voice block body                                         |
+| `{text}`    | Voice text from body, `text="..."`, or colon shorthand |
 | `{lang}`    | Optional markup override such as `lang=ru`               |
 | `{rate}`    | Optional markup override such as `rate=+30%`             |
 | `{mp3}`     | Flat temp artifact path under `~/.pi/agent/tmp/telegram` |
@@ -75,26 +79,27 @@ For one-step `template` handlers, stdout remains the default result channel: the
 
 ## Buttons Markup
 
-Assistant replies can include independent button blocks. The block body is the prompt sent back to pi when the user taps the button; omit the body when the prompt should equal the label:
+Assistant replies can include independent button blocks. The prompt is sent back to pi when the user taps the button; use the colon shorthand when the prompt should equal the label, `prompt="..."` for one-line prompts, or the body form for multiline prompts:
 
 ```md
 I can continue.
 
-<!-- telegram_button label="OK"
-Continue with the current plan.
--->
+<!-- telegram_button label=Continue prompt="Continue with the current plan." -->
 
 <!-- telegram_button label="Show risks"
 List the main risks first.
 -->
 
-<!-- telegram_button label="Done" -->
+<!-- telegram_button: Done -->
 ```
 
 Rules:
 
-- `telegram_button label="Label"` creates one independent button row whose prompt is the block body, or the label itself when the body is omitted.
+- `telegram_button: Label` creates one independent label-only button row whose prompt equals the label.
+- `telegram_button label="Label" prompt="Prompt"` creates one independent button row whose prompt is the `prompt` attribute.
+- `telegram_button label="Label"` with a body creates one independent button row whose prompt is the block body.
 - The opening `<!-- telegram_button` marker must start at column zero on a top-level line outside fenced code, quotes, and lists; otherwise it is rendered as literal Markdown.
+- Keep the canonical body form as `<!-- telegram_button label="Label"` + body + `-->`; closed heads must use `prompt="..."` or the colon shorthand to create a button.
 - Use one block per button; this mirrors HTML's singular element model and avoids a nested button DSL inside comments.
 - Button actions are stored in memory with short `callback_data`; Telegram never sees the full prompt in the button payload.
 
@@ -105,8 +110,8 @@ Buttons are built in and do not need a command template because they are pure Te
 The extension injects Telegram-specific system prompt guidance so agents know the fast path:
 
 - Write the full technical answer as normal Markdown.
-- Add `telegram_voice` when a Telegram-native voice message is useful; the block body is the text to synthesize and may be a companion summary, but no specific summary format is required.
-- Add `telegram_button label="..."` for quick replies that should come back as normal Telegram prompts.
+- Add `telegram_voice` when a Telegram-native voice message is useful; use body text, `text="..."`, or colon shorthand for the text to synthesize. A companion summary is optional, no specific summary format is required.
+- Add `telegram_button: ...` when label equals prompt, `telegram_button label="..." prompt="..."` for one-line prompts, or `telegram_button label="..."` with a body for multiline prompts. If the reply contains only button/voice comment blocks, add a short visible marker (for example `Choose one:`) before them so Telegram always has a visible parent message for attachment.
 - Do not call or register TTS/text-to-OGG/Telegram transport tools for voice or buttons; the bridge owns the configured outbound-handler pipeline and delivery.
 
 This keeps the agent focused on semantics and lets the bridge handle low-latency Telegram adaptation.

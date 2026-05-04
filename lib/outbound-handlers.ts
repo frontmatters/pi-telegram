@@ -106,6 +106,16 @@ interface TelegramTopLevelFenceState {
   length: number;
 }
 
+function isTelegramActionCommentContent(content: string): boolean {
+  const normalizedContent = content.replace(/^\s+/, "");
+  const [head = ""] = normalizedContent.split(/\r?\n/, 1);
+  return ["telegram_voice", "telegram_button"].some((command) => {
+    if (!head.startsWith(command)) return false;
+    const nextChar = head[command.length];
+    return nextChar === undefined || /\s|:/.test(nextChar);
+  });
+}
+
 function getMarkdownLineEnd(markdown: string, offset: number): number {
   const newlineIndex = markdown.indexOf("\n", offset);
   return newlineIndex === -1 ? markdown.length : newlineIndex + 1;
@@ -144,6 +154,28 @@ function isTopLevelClosingFence(
   );
 }
 
+function collectInlineClosedTelegramActionBody(
+  markdown: string,
+  bodyStart: number,
+  commentContent: string,
+): { content: string; end: number } | undefined {
+  const bodyLineEnd = getMarkdownLineEnd(markdown, bodyStart);
+  const bodyLine = getMarkdownLineText(markdown, bodyStart, bodyLineEnd);
+  const closeLineEnd = getMarkdownLineEnd(markdown, bodyLineEnd);
+  const closeLine = getMarkdownLineText(markdown, bodyLineEnd, closeLineEnd);
+  const hasRecoverableBody =
+    isTelegramActionCommentContent(commentContent) &&
+    bodyLine.trim() !== "" &&
+    !bodyLine.startsWith("<!--") &&
+    !bodyLine.startsWith("-->") &&
+    closeLine === "-->";
+  if (!hasRecoverableBody) return undefined;
+  return {
+    content: `${commentContent.trimEnd()}\n${bodyLine}`,
+    end: bodyLineEnd + 3,
+  };
+}
+
 function collectTopLevelHtmlComments(markdown: string): {
   comments: TelegramTopLevelHtmlComment[];
   openCommentStart?: number;
@@ -168,9 +200,23 @@ function collectTopLevelHtmlComments(markdown: string): {
     if (line.startsWith("<!--")) {
       const closeIndex = markdown.indexOf("-->", offset + 4);
       if (closeIndex === -1) return { comments, openCommentStart: offset };
-      const end = closeIndex + 3;
-      const raw = markdown.slice(offset, end);
-      comments.push({ raw, content: raw.slice(4, -3), start: offset, end });
+      let end = closeIndex + 3;
+      let raw = markdown.slice(offset, end);
+      let content = raw.slice(4, -3);
+      const closeColumn = closeIndex - offset;
+      const closesOnOpeningLine = closeIndex < lineEnd;
+      const hasOnlyWhitespaceAfterClose =
+        line.slice(closeColumn + 3).trim() === "";
+      const inlineBody =
+        closesOnOpeningLine && hasOnlyWhitespaceAfterClose
+          ? collectInlineClosedTelegramActionBody(markdown, lineEnd, content)
+          : undefined;
+      if (inlineBody) {
+        end = inlineBody.end;
+        raw = markdown.slice(offset, end);
+        content = inlineBody.content;
+      }
+      comments.push({ raw, content, start: offset, end });
       offset = getMarkdownLineEnd(markdown, end);
       continue;
     }
@@ -239,18 +285,29 @@ function parseTopLevelTelegramComment(
   };
 }
 
+function parseTelegramCommentAttributes(input: string): Record<string, string> {
+  const attributes: Record<string, string> = {};
+  for (const match of input.matchAll(
+    /([A-Za-z_][A-Za-z0-9_-]*)=(?:"([^"]*)"|'([^']*)'|(\S+))/g,
+  )) {
+    const key = match[1];
+    const value = (match[2] ?? match[3] ?? match[4] ?? "").trim();
+    if (value) attributes[key] = value;
+  }
+  return attributes;
+}
+
 function parseVoiceReplyAttributes(input: string): {
   lang?: string;
   rate?: string;
+  text?: string;
 } {
-  const attributes: { lang?: string; rate?: string } = {};
-  for (const token of input.trim().split(/\s+/).filter(Boolean)) {
-    const [rawKey, ...valueParts] = token.split("=");
-    const value = valueParts.join("=").trim();
-    if (rawKey === "lang" && value) attributes.lang = value;
-    if (rawKey === "rate" && value) attributes.rate = value;
-  }
-  return attributes;
+  const attributes = parseTelegramCommentAttributes(input);
+  return {
+    ...(attributes.lang ? { lang: attributes.lang } : {}),
+    ...(attributes.rate ? { rate: attributes.rate } : {}),
+    ...(attributes.text ? { text: attributes.text } : {}),
+  };
 }
 
 function parseVoiceCommentBody(
@@ -267,7 +324,8 @@ function parseVoiceCommentBody(
   if (trimmedHead.startsWith(":")) {
     return { attrs: "", text: trimmedHead.slice(1).trim() };
   }
-  return { attrs: trimmedHead, text: "" };
+  const attrs = parseVoiceReplyAttributes(trimmedHead);
+  return { attrs: trimmedHead, text: attrs.text ?? "" };
 }
 
 function normalizeMarkdownAfterVoiceExtraction(markdown: string): string {
@@ -712,26 +770,36 @@ function normalizeMarkdownAfterButtonExtraction(markdown: string): string {
   return markdown.replace(/\n{3,}/g, "\n\n").trim();
 }
 
-function parseButtonsCommentAttributes(input: string): { label?: string } {
-  const attributes: { label?: string } = {};
-  for (const match of input.matchAll(
-    /([A-Za-z_][A-Za-z0-9_-]*)=(?:"([^"]*)"|'([^']*)'|(\S+))/g,
-  )) {
-    const key = match[1];
-    const value = match[2] ?? match[3] ?? match[4] ?? "";
-    if (key === "label" && value.trim()) attributes.label = value.trim();
-  }
-  return attributes;
+function parseButtonsCommentAttributes(input: string): {
+  label?: string;
+  prompt?: string;
+} {
+  const attributes = parseTelegramCommentAttributes(input);
+  return {
+    ...(attributes.label ? { label: attributes.label } : {}),
+    ...(attributes.prompt ? { prompt: attributes.prompt } : {}),
+  };
 }
 
 function parseButtonsCommentRows(
   head: string,
   body: string | undefined,
 ): TelegramOutboundButtonAction[][] {
-  const attributes = parseButtonsCommentAttributes(head);
-  if (!attributes.label) return [];
-  const prompt = body?.trim() || attributes.label;
-  return [[{ text: attributes.label, prompt }]];
+  const trimmedHead = head.trim();
+  if (body === undefined) {
+    if (trimmedHead.startsWith(":")) {
+      const label = trimmedHead.slice(1).trim();
+      return label ? [[{ text: label, prompt: label }]] : [];
+    }
+    const attributes = parseButtonsCommentAttributes(head);
+    return attributes.label && attributes.prompt
+      ? [[{ text: attributes.label, prompt: attributes.prompt }]]
+      : [];
+  }
+  const label = parseButtonsCommentAttributes(head).label;
+  const prompt = body.trim();
+  if (!label || !prompt) return [];
+  return [[{ text: label, prompt }]];
 }
 
 export function createTelegramButtonActionStore(

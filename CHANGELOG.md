@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.3: Outbound Action Syntax & Prompt Guidance
+
+- `[Outbound Buttons]` `telegram_button: Label` now creates a label-only button whose callback prompt equals the label. Impact: button shorthand now matches the `telegram_voice: Text` inline style and leaves one canonical label-only syntax.
+- `[Outbound Actions]` `telegram_voice text="..."` and `telegram_button label=... prompt="..."` now provide explicit one-line action forms. Impact: agents can keep short voice and button actions on one line without relying on body blocks.
+- `[Outbound Parsing]` Hidden action bodies now stay attached to their action heads within the parser recovery window. Impact: hidden prompt and TTS bodies stay out of Telegram-visible messages.
+- `[Prompt Guidance]` Telegram prompt injection is now organized by inbound context, visible output, and native outbound actions, with explicit one-line vs body `telegram_button` syntax. Impact: agents get the same operational rules with less duplicated guidance and more consistent action markup.
+- `[Architecture]` Entrypoint wiring now names inbound routing, queue session lifecycle, agent lifecycle hooks, outbound reply collaborators, and repeated pi context ports before registration. Impact: `index.ts` remains the composition root while the final hook/polling registration blocks are easier to scan.
+- `[Config]` Missing `telegram.json` is now handled with an explicit existence check before reading. Impact: first-run config loading keeps the empty-config fallback without using read failures as control flow.
+
 ## 0.6.2: Reload-Stale Queue Dispatch Hotfix
 
 - `[Queue Dispatch]` Deferred post-agent-end queue dispatch is now session-bound and canceled on session shutdown. Impact: `/reload` and session replacement can no longer leave old queue timers calling stale `ExtensionContext` methods such as `ctx.isIdle()`.
