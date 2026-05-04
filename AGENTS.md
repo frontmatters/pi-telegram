@@ -72,8 +72,8 @@
 - `telegram_attach` is the canonical outbound file-delivery path for Telegram-originated requests
 - Telegram delivery strips top-level HTML comments from preview/final text; column-zero top-level `<!-- telegram_voice ... -->` and `<!-- telegram_button ... -->` blocks are special outbound comments handled after `agent_end` without requiring agent-side transport tool calls, while comments inside code, quotes, lists, or indented examples stay literal
 - `telegram_voice` and `telegram_button` are not pi tools; keep prompts/docs explicit that agents should author markup while the extension owns command-template voice pipelines, button routing, and Telegram delivery
-- `telegram_voice` bodies are arbitrary TTS-target text: a short companion summary is a useful pattern, not a required format
-- `telegram_button` may omit the body when the callback prompt should equal the button label, e.g. `<!-- telegram_button label="OK" -->`
+- `telegram_voice` text is arbitrary TTS-target text: use body form for multiline text, `<!-- telegram_voice text="Short summary" -->` for explicit one-line text, or `<!-- telegram_voice: Short summary -->` for one-line text with no attributes
+- `telegram_button` has three canonical forms: `<!-- telegram_button: OK -->` for label-only buttons, `<!-- telegram_button label=Continue prompt="Continue with the current plan." -->` for one-line prompts, or `<!-- telegram_button label="Show risks"\nList the main risks first.\n-->` for multiline prompts
 
 ## 6. Engineering Conventions
 

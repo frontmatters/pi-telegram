@@ -135,11 +135,11 @@ If you ask pi for a file or generated artifact (e.g., _"generate a shell script 
 
 ### Assistant-Authored Outbound Actions
 
-Assistant replies can include hidden outbound blocks. `telegram_voice` and `telegram_button` are not pi tools; they are assistant-authored HTML comments that the bridge removes from Telegram text and handles after `agent_end`. Action comments are recognized only as top-level column-zero blocks outside fenced code, quotes, and lists, so documentation examples remain literal. This is faster than agent-side tool calls because the agent only writes correctly formatted Markdown in its normal answer; the extension builds the configured voice pipeline, button markup, and callback routing itself without registering or invoking extra transport/TTS/text-to-OGG tools.
+Assistant replies can include hidden outbound blocks. `telegram_voice` and `telegram_button` are not pi tools; they are assistant-authored HTML comments that the bridge removes from Telegram text and handles after `agent_end`. Recognized blocks must start at column zero on a top-level line outside fenced code, quotes, and lists, so documentation examples remain literal. The agent writes normal Markdown; the extension owns voice generation, button markup, callback routing, and delivery.
 
 #### Voice
 
-Voice blocks synthesize their body and upload it as a native Telegram `sendVoice` OGG/Opus message. The body may be a concise companion summary, but it does not have to follow that format; write the text you want spoken and keep it TTS-friendly:
+Voice blocks synthesize their text and upload it as a native Telegram `sendVoice` OGG/Opus message. Use body form for multiline text, `text="..."` for explicit one-line text with optional attributes, and the colon shorthand for a one-line voice with no attributes. The spoken text may be a concise companion summary, but it does not have to follow that format; write what you want spoken and keep it TTS-friendly:
 
 ```md
 Full technical answer stays readable as text.
@@ -147,6 +147,10 @@ Full technical answer stays readable as text.
 <!-- telegram_voice lang=ru rate=+30%
 Text to synthesize as a Telegram voice message.
 -->
+
+<!-- telegram_voice lang=ru rate=+30% text="Short spoken companion summary." -->
+
+<!-- telegram_voice: Short spoken companion summary. -->
 ```
 
 Outbound voice is disabled unless a matching `outboundHandlers[]` entry is configured. Multiple `telegram_voice` blocks in one reply are synthesized and sent independently, preserving each block's attributes. The bridge uses the same [command-template contract](./docs/command-templates.md) as inbound attachment handlers: split the template into args, substitute placeholders, execute without a shell, and use stdout as the result channel for a single template.
@@ -171,19 +175,21 @@ A TTS plus MP3-to-OGG setup can be expressed as `template: [...]`. The bridge pr
 
 #### Buttons
 
-Button blocks attach inline quick replies to the final text. Use one independent `telegram_button` block per action; its `label` is shown in Telegram and its body is sent back to pi when tapped. If the prompt should equal the label, the body can be omitted:
+Button blocks attach inline quick replies to the final text. Use one independent `telegram_button` block per action. If the prompt should equal the label, use the colon shorthand. If the prompt differs, use the inline `prompt="..."` attribute for one-line prompts or the body form for multiline prompts:
 
 ```md
 I can continue.
 
-<!-- telegram_button label="Continue"
-Continue with the current plan.
+<!-- telegram_button label=Continue prompt="Continue with the current plan." -->
+
+<!-- telegram_button label="Show risks"
+List the main risks first.
 -->
 
-<!-- telegram_button label="OK" -->
+<!-- telegram_button: OK -->
 ```
 
-Button prompts are routed back into the normal Telegram queue as prompt turns. Outbound handler details are documented in [`docs/outbound-handlers.md`](./docs/outbound-handlers.md).
+Button prompts are routed back into the normal Telegram queue as prompt turns. Keep the opening comment unclosed until the body-ending `-->` for body-form buttons. Closed heads must use `prompt="..."` or the colon shorthand to create a button. Outbound handler details are documented in [`docs/outbound-handlers.md`](./docs/outbound-handlers.md).
 
 ## Streaming
 

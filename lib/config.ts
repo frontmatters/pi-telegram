@@ -3,6 +3,7 @@
  * Owns persisted bot/session pairing state, local config storage, authorization policy, and first-user pairing side effects
  */
 
+import { existsSync } from "node:fs";
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -64,12 +65,9 @@ export interface TelegramConfigStoreOptions {
 export async function readTelegramConfig(
   configPath: string,
 ): Promise<TelegramConfig> {
-  try {
-    const content = await readFile(configPath, "utf8");
-    return JSON.parse(content) as TelegramConfig;
-  } catch {
-    return {};
-  }
+  if (!existsSync(configPath)) return {};
+  const content = await readFile(configPath, "utf8");
+  return JSON.parse(content) as TelegramConfig;
 }
 
 export async function writeTelegramConfig(

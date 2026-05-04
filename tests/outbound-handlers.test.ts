@@ -55,6 +55,44 @@ test("Voice reply planner supports compact inline comments", () => {
   });
 });
 
+test("Voice reply planner supports text attribute comments", () => {
+  const plan = planTelegramVoiceReply(
+    'Text before.\n\n<!-- telegram_voice lang=ru rate=+10% text="Inline spoken summary." -->',
+  );
+  assert.deepEqual(plan, {
+    markdown: "Text before.",
+    voiceText: "Inline spoken summary.",
+    voiceReplies: [{ text: "Inline spoken summary.", lang: "ru", rate: "+10%" }],
+    lang: "ru",
+    rate: "+10%",
+  });
+});
+
+test("Voice reply planner recovers one-line action bodies", () => {
+  const plan = planTelegramVoiceReply(
+    [
+      "Text before.",
+      "",
+      "<!-- telegram_voice lang=ru rate=+30% -->",
+      "Speak this instead of leaking it as text.",
+      "-->",
+    ].join("\n"),
+  );
+  assert.deepEqual(plan, {
+    markdown: "Text before.",
+    voiceText: "Speak this instead of leaking it as text.",
+    voiceReplies: [
+      {
+        text: "Speak this instead of leaking it as text.",
+        lang: "ru",
+        rate: "+30%",
+      },
+    ],
+    lang: "ru",
+    rate: "+30%",
+  });
+});
+
 test("Voice reply planner keeps multiple telegram_voice blocks as independent artifacts", () => {
   const plan = planTelegramVoiceReply(
     [
@@ -128,6 +166,18 @@ test("Comment preview stripping hides generic and partial comments", () => {
     "Visible text.\n\nVisible tail.",
   );
   assert.equal(
+    stripTelegramCommentMarkupForPreview(
+      [
+        "Visible text.",
+        "",
+        '<!-- telegram_button label="Hidden" -->',
+        "Hidden prompt.",
+        "-->",
+      ].join("\n"),
+    ),
+    "Visible text.",
+  );
+  assert.equal(
     stripTelegramCommentMarkupForPreview("Visible text.\n\n<"),
     "Visible text.",
   );
@@ -184,7 +234,7 @@ test("Outbound comments resume after indented and longer closing fences", () => 
     "<!-- telegram_button label=Skip -->",
     "   ````",
     "",
-    "<!-- telegram_button label=OK -->",
+    "<!-- telegram_button: OK -->",
   ].join("\n");
   const actions: unknown[] = [];
   const plan = planTelegramButtonReply(markdown, {
@@ -264,6 +314,134 @@ test("Button reply planner supports independent label blocks", () => {
       [{ text: "More", callback_data: "btn:2" }],
     ],
   });
+});
+
+test("Button reply planner supports colon label-only shortcut", () => {
+  const actions: unknown[] = [];
+  const plan = planTelegramButtonReply(
+    ["Visible answer.", "", "<!-- telegram_button: OK -->"].join("\n"),
+    {
+      registerAction: (action) => {
+        actions.push(action);
+        return `btn:${actions.length}`;
+      },
+    },
+  );
+  assert.equal(plan.markdown, "Visible answer.");
+  assert.deepEqual(actions, [{ text: "OK", prompt: "OK" }]);
+  assert.deepEqual(plan.replyMarkup, {
+    inline_keyboard: [[{ text: "OK", callback_data: "btn:1" }]],
+  });
+});
+
+test("Button reply planner supports prompt attribute shortcut", () => {
+  const actions: unknown[] = [];
+  const plan = planTelegramButtonReply(
+    [
+      "Visible answer.",
+      "",
+      '<!-- telegram_button label=Continue prompt="Continue with the current plan." -->',
+    ].join("\n"),
+    {
+      registerAction: (action) => {
+        actions.push(action);
+        return `btn:${actions.length}`;
+      },
+    },
+  );
+  assert.equal(plan.markdown, "Visible answer.");
+  assert.deepEqual(actions, [
+    { text: "Continue", prompt: "Continue with the current plan." },
+  ]);
+  assert.deepEqual(plan.replyMarkup, {
+    inline_keyboard: [[{ text: "Continue", callback_data: "btn:1" }]],
+  });
+});
+
+test("Button reply planner recovers one-line action bodies", () => {
+  const actions: unknown[] = [];
+  const plan = planTelegramButtonReply(
+    [
+      "Visible answer.",
+      "",
+      '<!-- telegram_button label="Boundary" -->',
+      "Where does JAM end and DEOS begin?",
+      "-->",
+      "",
+      '<!-- telegram_button label="Sources" -->',
+      "Which DEOS sources are canonical?",
+      "-->",
+    ].join("\n"),
+    {
+      registerAction: (action) => {
+        actions.push(action);
+        return `btn:${actions.length}`;
+      },
+    },
+  );
+  assert.equal(plan.markdown, "Visible answer.");
+  assert.deepEqual(actions, [
+    { text: "Boundary", prompt: "Where does JAM end and DEOS begin?" },
+    { text: "Sources", prompt: "Which DEOS sources are canonical?" },
+  ]);
+  assert.deepEqual(plan.replyMarkup, {
+    inline_keyboard: [
+      [{ text: "Boundary", callback_data: "btn:1" }],
+      [{ text: "Sources", callback_data: "btn:2" }],
+    ],
+  });
+});
+
+test("Button reply planner requires prompt attribute for closed heads", () => {
+  const actions: unknown[] = [];
+  const plan = planTelegramButtonReply(
+    [
+      "Visible answer.",
+      "",
+      '<!-- telegram_button label="Closed" -->',
+      "",
+      "Visible tail.",
+    ].join("\n"),
+    {
+      registerAction: (action) => {
+        actions.push(action);
+        return `btn:${actions.length}`;
+      },
+    },
+  );
+  assert.equal(plan.markdown, "Visible answer.\n\nVisible tail.");
+  assert.deepEqual(actions, []);
+});
+
+test("Button reply planner bounds inline-closed body recovery", () => {
+  const actions: unknown[] = [];
+  const plan = planTelegramButtonReply(
+    [
+      "Visible answer.",
+      "",
+      '<!-- telegram_button label="Long" -->',
+      "First body line.",
+      "Second body line.",
+      "-->",
+    ].join("\n"),
+    {
+      registerAction: (action) => {
+        actions.push(action);
+        return `btn:${actions.length}`;
+      },
+    },
+  );
+  assert.equal(
+    plan.markdown,
+    [
+      "Visible answer.",
+      "",
+      "First body line.",
+      "Second body line.",
+      "-->",
+    ].join("\n"),
+  );
+  assert.deepEqual(actions, []);
 });
 
 test("Button action store resolves generated callback data", () => {
