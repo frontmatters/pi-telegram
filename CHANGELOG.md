@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.6: Runtime Adapter Positioning
+
+- `[Package]` Bumped package metadata to `0.9.6` and repositioned the package description from "Better Telegram DM bridge extension for π" to "Telegram Runtime Adapter for π". Impact: package metadata now reflects the runtime adapter/operator-console role rather than a narrow pipe metaphor.
+- `[Telegram API]` Introduced `TELEGRAM_API_BASE` for the Bot API endpoint and documented native HTTP/HTTPS proxy operation through `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, and explicit `NODE_USE_ENV_PROXY=1` / `--use-env-proxy` enablement. Impact: users behind corporate proxies, local HTTP tunnels, or restricted networks get a zero-runtime-dependency proxy path without replacing native `fetch`; SOCKS5 remains outside the zero-dependency core.
+- `[Dependencies]` Refreshed the lockfile transitive dependency set so `npm audit` clears current `fast-uri` and `fast-xml-builder` advisories inherited through development peer installs. Impact: the full `npm run validate` pipeline passes without changing runtime dependencies.
+- `[README]` Restructured the user entrypoint around install → connect → use → core features → docs, then consolidated examples, terminology, proxy setup, `PI_CODING_AGENT_DIR`, and other environment-only configuration around the runtime-adapter/operator-console model. Impact: first-time users get a clearer path from installation to operation, while vivid examples and non-UI runtime knobs stay discoverable.
+- `[Context]` Promoted the runtime-adapter/operator-console README rhythm, `/start` menu emphasis, and environment-only configuration rule into `AGENTS.md`. Impact: future documentation edits preserve the same positioning and env-knob coverage instead of drifting back toward a narrow bridge metaphor.
+
 ## 0.9.5: Telegram Delivery Resilience Hotfix
 
 - `[Preview Delivery]` Preview flush failures from Telegram transport errors such as `fetch failed` / `ECONNRESET` are now caught and recorded as runtime diagnostics instead of escaping from the preview pipeline. Impact: transient Telegram connectivity failures no longer crash the extension during streamed preview edits.
