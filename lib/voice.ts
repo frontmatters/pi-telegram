@@ -19,6 +19,7 @@
  */
 
 import type { TelegramConfig } from "./config.ts";
+import type { DownloadedTelegramTurnFile } from "./turns.ts";
 
 import {
   getTelegramVoiceProviders,
@@ -41,6 +42,9 @@ export const TELEGRAM_VOICE_REPLY_MODES = ["mirror", "voice", "manual"] as const
  *   1. Explicit setting from telegram.json (config.voice.replyMode)
  *   2. Current voice provider's policy via getVoicePolicy() (preferred)
  *   3. Fallback to "manual"
+ *
+ * When multiple providers are registered, the first one (in registration order)
+ * that returns a valid replyMode wins.
  */
 export function getTelegramVoiceReplyMode(
   config?: TelegramConfig,
@@ -64,6 +68,17 @@ export function getTelegramVoiceReplyMode(
 
   // 3. Safe default
   return "manual";
+}
+
+/**
+ * Returns whether the user wants the voice provider's transcript attached
+ * as a caption on the voice message.
+ *
+ * Reads from `config.voice.sendTranscript`.
+ * Default: false (no transcript text sent at all).
+ */
+export function getTelegramVoiceSendTranscript(config?: TelegramConfig): boolean {
+  return !!config?.voice?.sendTranscript;
 }
 
 // ======================================================
@@ -110,7 +125,9 @@ export function computeVoicePromptContribution(
     userText: rawText,
   };
 
-  // Let the voice provider supply additional instructions for the LLM when in voice mode
+  // Let the voice provider supply additional instructions for the LLM when in voice mode.
+  // When multiple providers are registered, the first one (in registration order)
+  // that returns a non-empty string wins.
   for (const provider of getTelegramVoiceProviders()) {
     if (typeof provider.getVoicePromptContribution === "function") {
       const contribution = provider.getVoicePromptContribution(view);
@@ -143,7 +160,12 @@ export function shouldSuppressPreviewForVoice(
 
 
 // Complete Voice surface re-export from outbound-handlers.ts
-// Re-export only what actually lives in outbound-handlers.ts
+// Re-export only what actually lives in outbound-handlers.ts.
+//
+// NOTE: This creates a deliberate import cycle (voice.ts ↔ outbound-handlers.ts).
+// It is accepted to keep the thin voice domain (policy + tagging) in one module
+// while the Telegram HTML comment parser + provider registry + delivery live in
+// outbound-handlers. See tests/invariants.test.ts for the explicit exception.
 export {
   registerTelegramVoiceProvider,
   getTelegramVoiceProviders,

@@ -42,7 +42,11 @@ Significant cleanup and architectural tightening to keep `pi-telegram` as a thin
 - Voice providers are now fully responsible for:
   - Speech rewriting and tag handling
   - TTS + conversion to OGG/Opus
-  - `transcriptText` and `sendTranscriptAsMessage` decisions
+  - Whether to return `transcriptText` at all (based on the user's "Send Transcript" toggle in the Voice section)
+
+- When a provider returns `transcriptText`, the bridge attaches it as the **caption** on the voice message ("Send Transcript = ON"). "OFF" means the provider returns no transcript text (clean voice note, no caption, no extra message). The old separate transcript message path has been removed.
+
+- `getTelegramVoiceSendTranscript(config)` helper + `config.voice.sendTranscript` field added (provider ownership model means the bridge currently delegates the decision to whether the provider emits `transcriptText`).
 
 - A `getVoicePromptContribution(view)` hook exists in the `TelegramVoiceProvider` interface. Automatic injection by the bridge is planned but not yet implemented.
 
@@ -50,11 +54,13 @@ Significant cleanup and architectural tightening to keep `pi-telegram` as a thin
   - Entire "persistent registration" system (`persistent?` option, `reRegisterPersistent*` functions, auto-restore logic) deleted
   - Local development resolver (`lib/dev.ts`) removed from the public package
   - GlobalThis pollution significantly reduced
+  - Duplicate `TelegramVoiceProvider` interface + circular re-export conflicts cleaned
+  - `registerTelegramVoiceProvider` no longer mutates caller function objects (clean wrapper used instead)
 
 - `record_voice` chat action is now used during voice delivery.
-- Transcript is always produced by the provider; the `sendTranscript` setting only controls the optional extra text message.
+- All 562 tests pass. `npm run typecheck` green on voice surfaces. Weak `planTelegramVoiceReply` tests strengthened to use proper column-zero block syntax + real assertions.
 
-**Breaking for providers**: Must return `.ogg` or `.opus`. Non-OGG files are rejected and fall back to text delivery. Old MP3 return paths are no longer supported.
+**Breaking for providers**: Must return `.ogg` or `.opus`. Non-OGG files are rejected and fall back to text delivery. Old MP3 return paths are no longer supported. `sendTranscriptAsMessage` is deprecated/ignored (use the toggle + whether you emit `transcriptText`).
 
 See `docs/voice.md` for the updated contract.
 

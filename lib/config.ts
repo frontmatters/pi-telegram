@@ -45,6 +45,8 @@ export interface TelegramConfig {
   proactivePush?: boolean;
   voice?: {
     replyMode?: "manual" | "mirror" | "voice";
+    /** Whether to attach the provider's transcriptText as caption on voice messages */
+    sendTranscript?: boolean;
   };
 }
 

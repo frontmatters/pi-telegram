@@ -157,7 +157,12 @@ export interface TelegramVoiceReplySenderDeps {
 /**
  * What a voice provider can return for a single synthesis.
  * pi-telegram only cares about delivery; the provider (xai-voice etc.) owns
- * text optimisation, speech tags, transcript caption vs separate message decision.
+ * text optimisation, speech tags, and whether to return `transcriptText` at all
+ * (based on the user's "Send Transcript" toggle).
+ *
+ * - If `transcriptText` is returned, it is attached as the voice message **caption**.
+ * - Separate transcript messages are no longer sent (the old `sendTranscriptAsMessage`
+ *   flag is deprecated and ignored for transcript).
  */
 export type TelegramVoiceReplyMode = "mirror" | "voice" | "manual";
 
@@ -176,16 +181,6 @@ export type TelegramVoiceProviderResult =
       sendTranscriptAsMessage?: boolean;
     }
   | undefined;
-
-export interface TelegramVoiceProvider {
-  (
-    text: string,
-    options?: { lang?: string; rate?: string },
-  ): Promise<TelegramVoiceProviderResult>;
-
-  getVoicePolicy?: () => { replyMode?: TelegramVoiceReplyMode };
-  getVoicePromptContribution?: (view: TelegramVoiceTurnView) => string | undefined;
-}
 
 // --- Programmatic Outbound Handler Registry ---
 
@@ -332,14 +327,6 @@ export interface TelegramVoiceProvider {
 // ======================================================
 // === Voice Provider Registry
 // ======================================================
-
-// Re-export voice domain types for backward compatibility of the public API
-export type {
-  TelegramVoiceReplyMode,
-  TelegramVoiceTurnView,
-  TelegramVoiceProvider,
-  TelegramVoiceProviderResult,
-} from "./voice.ts";
 
 /**
  * Voice providers are registered separately from normal outbound handlers.
@@ -942,6 +929,12 @@ export interface TelegramOutboundReplyPlan<TReplyMarkup = unknown> {
 // (Commit 2 structural improvement). The Voice registry, parsing, and delivery
 // stay in this file (original Voice Support location) and are imported by
 // voice.ts for the policy resolution that needs to ask providers for their policy.
+//
+// NOTE: This creates a deliberate import cycle (voice.ts ↔ outbound-handlers.ts).
+// It is accepted because it keeps the voice domain cohesive while the heavy
+// Telegram-specific parser + delivery logic lives in outbound-handlers.
+// See tests/invariants.test.ts (the "Voice domain stays free of local domain imports" check
+// explicitly allows this one cycle).
 export {
   getTelegramVoiceReplyMode,
   computeVoiceTurnFlags,
@@ -975,7 +968,12 @@ export function registerTelegramVoiceProvider(
   const id = options?.id ?? `voice-provider-${registry.size}`;
   let normalized: TelegramVoiceProvider;
   if (typeof provider === "function") {
-    normalized = Object.assign(provider, { getVoicePromptContribution: undefined }) as TelegramVoiceProvider;
+    // Wrap instead of mutating the caller's function object (prevents surprising side-effects
+    // if the same function reference is reused or monkey-patched later).
+    normalized = Object.assign(
+      (text: string, options?: { lang?: string; rate?: string }) => provider(text, options),
+      { getVoicePromptContribution: undefined },
+    ) as TelegramVoiceProvider;
   } else {
     normalized = provider;
   }
@@ -1066,19 +1064,11 @@ export function createTelegramVoiceReplySender(
           basename(voiceFilePath),
         );
 
-        // Optional: send transcript as separate message (provider decides)
-        const sendTranscriptAsMessage =
-          typeof providerResult === "object" &&
-          providerResult &&
-          "sendTranscriptAsMessage" in providerResult
-            ? (providerResult as any).sendTranscriptAsMessage
-            : false;
-
-        if (sendTranscriptAsMessage && transcriptText && deps.sendTextReply) {
-          await deps.sendTextReply(turn.chatId, turn.replyToMessageId, transcriptText).catch((e) => {
-            deps.recordRuntimeEvent?.("voice", e, { phase: "transcript-message-failed" });
-          });
-        }
+        // Transcript is attached as caption when the provider returns transcriptText
+        // (controlled by the "Send Transcript" toggle in the Voice extension).
+        // We no longer support sending transcript as a separate message (user feedback:
+        // separate message approach is unwanted; caption-only is the desired "on" behavior,
+        // and off means provider should not return transcriptText at all).
 
         return;
       } catch (error) {
@@ -1379,7 +1369,11 @@ export function planTelegramVoiceReply(
   const stripped = replaceTopLevelHtmlComments(markdown, (comment) => {
     let command = parseTopLevelTelegramComment(comment, "telegram_voice");
     if (!command) {
-      // Robust fallback for Voice-specific comments (handles edge cases in comment content extraction)
+      // Robust fallback for Voice-specific comments.
+      // Reached only for certain edge-case extractions from collectTopLevelHtmlComments
+      // (e.g. comments with unusual leading characters or legacy forms that survive the
+      // normalization in parseTopLevelTelegramComment but still contain "telegram_voice").
+      // This path is intentionally narrow and not exercised by current documented usage.
       let content = comment.content.replace(/^\s+/, "").replace(/^!/, "");
       if (content.startsWith("telegram_voice")) {
         const headPart = content.slice("telegram_voice".length).trim();

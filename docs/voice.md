@@ -59,8 +59,8 @@ Voice provider extensions (such as `pi-xai-voice`) register themselves through `
 - Text optimisation / speech-style rewriting
 - Adding speech tags (when desired)
 - Running TTS + ffmpeg conversion to OGG/Opus
-- Deciding the clean `transcriptText` (always provided for logs + caption)
-- Whether the transcript should also be sent as a separate text message (`sendTranscriptAsMessage`)
+- Deciding whether to return `transcriptText` at all (based on the user's "Send Transcript" toggle)
+- `transcriptText` (when returned) is attached by the bridge as the voice message **caption** only. Separate transcript messages are no longer sent.
 
 The bridge shows a `record_voice` action while delivering and handles the final `sendVoice` + optional follow-up text message.
 
@@ -74,7 +74,7 @@ The provider receives the raw agent text plus optional `{ lang?, rate? }`.
 
 It must return one of:
 - `string` — path to a ready `.ogg` or `.opus` file
-- `{ audioPath: string, transcriptText?: string, sendTranscriptAsMessage?: boolean }` — `audioPath` must be OGG/Opus. `transcriptText` is used as the caption. If `sendTranscriptAsMessage` is true, the bridge also sends the transcript as a normal text message.
+- `{ audioPath: string, transcriptText?: string }` — `audioPath` must be OGG/Opus. When `transcriptText` is present it is attached as the voice message **caption**. The "Send Transcript" toggle in the provider's UI controls whether you return `transcriptText` (ON = caption, OFF = no text at all). The old `sendTranscriptAsMessage` flag is deprecated and ignored.
 - `undefined` — skip this text block
 
 **Important:** The bridge never runs ffmpeg or does speech rewriting. The provider is fully responsible for producing a clean, TTS-optimised text, running TTS, and converting to native voice format.
@@ -83,17 +83,22 @@ It must return one of:
 
 Registration returns a disposer function for cleanup.
 
-### Provider with transcript caption
+### Provider with transcript caption (controlled by user toggle)
 
-When a provider rewrites the text internally (for example to add speech tags), it can return the original clean text as `transcriptText`. This text is then used as the caption below the voice message in Telegram:
+When the user's "Send Transcript" toggle is ON, return the clean spoken text as `transcriptText`. The bridge attaches it as the caption on the voice message. When the toggle is OFF, return only the audio path (no `transcriptText`).
 
 ```typescript
 registerTelegramVoiceProvider(async (text, options) => {
   const rewritten = rewriteWithSpeechTags(text);
   const audioPath = await myTTS(rewritten, { language: options?.lang });
-  return { audioPath, transcriptText: text };
+  const sendTranscript = getUserSendTranscriptPreference(); // from your UI + telegram.json
+  return sendTranscript
+    ? { audioPath, transcriptText: text }
+    : { audioPath };
 });
 ```
+
+The bridge never sends a separate transcript message. Caption-only is the "ON" behavior.
 
 ### Surfacing provider diagnostics
 

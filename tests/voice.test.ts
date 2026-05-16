@@ -70,20 +70,20 @@ test("getTelegramVoiceReplyMode respects provider policy via getVoicePolicy()", 
   registerTelegramVoiceProvider(
     {
       getVoicePolicy: () => ({ replyMode: "voice" }),
-    },
+    } as any,
     { id: "test-provider-1" },
   );
 
-  // Provider policy should be respected (may return voice or fall back depending on timing)
-  const result = getTelegramVoiceReplyMode({ voice: { replyMode: "manual" } });
-  assert.ok(result === "voice" || result === "manual");
+  // No (or invalid) config → first provider's policy wins (config has priority only when valid)
+  const result = getTelegramVoiceReplyMode({});
+  assert.equal(result, "voice");
 });
 
 test("getTelegramVoiceReplyMode falls back to config when provider returns invalid policy", () => {
   registerTelegramVoiceProvider(
     {
       getVoicePolicy: () => ({ replyMode: "invalid" as any }),
-    },
+    } as any,
     { id: "bad-provider" },
   );
 
@@ -95,13 +95,13 @@ test("getTelegramVoiceReplyMode prefers first valid provider policy", () => {
   registerTelegramVoiceProvider(
     {
       getVoicePolicy: () => ({ replyMode: "invalid" as any }),
-    },
+    } as any,
     { id: "bad" },
   );
   registerTelegramVoiceProvider(
     {
       getVoicePolicy: () => ({ replyMode: "voice" }),
-    },
+    } as any,
     { id: "good" },
   );
 
@@ -184,18 +184,21 @@ test("planTelegramVoiceReply handles colon shorthand form", () => {
 
 test("planTelegramVoiceReply handles multiple voice blocks", () => {
   const result = planTelegramVoiceReply(
-    "First <!-- telegram_voice: One --> and second <!-- telegram_voice: Two -->",
+    "First\n\n<!-- telegram_voice: One -->\n\nand second\n\n<!-- telegram_voice: Two -->",
   );
-  // The function processes the voice comments (the exact population of voiceReplies/voiceText is secondary to the core functionality)
-  assert.ok(result.voiceReplies?.length >= 0 || result.voiceText !== undefined || result.markdown);
+  assert.equal(result.voiceReplies?.length, 2);
+  assert.equal(result.voiceText, "One\n\nTwo");
+  assert.ok(result.markdown.includes("First"));
+  assert.ok(result.markdown.includes("and second"));
+  assert.ok(!result.markdown.includes("telegram_voice"));
 });
 
 test("planTelegramVoiceReply returns cleaned markdown", () => {
-  const result = planTelegramVoiceReply("Normal <!-- telegram_voice: Voice only --> text");
+  const result = planTelegramVoiceReply("Normal\n\n<!-- telegram_voice: Voice only -->\n\ntext");
   assert.ok(result.markdown.includes("Normal"));
   assert.ok(result.markdown.includes("text"));
-  // The voice directive is processed (the exact voiceText/voiceReplies population depends on the final strip logic)
-  assert.ok(true); // Core functionality (processing + returning a plan) is verified by other tests
+  assert.equal(result.voiceText, "Voice only");
+  assert.ok(!result.markdown.includes("telegram_voice"));
 });
 
 // ======================================================
@@ -214,7 +217,7 @@ test("Voice provider registry - basic register / get / has / clear", () => {
     {
       getVoicePolicy: () => ({ replyMode: "voice" }),
       getVoicePromptContribution: () => "Be concise.",
-    },
+    } as any,
     { id: "p2" },
   );
   assert.equal(getTelegramVoiceProviders().length, 2);
@@ -234,7 +237,7 @@ test("Voice provider registry accepts both function and object form", () => {
   registerTelegramVoiceProvider(
     {
       getVoicePolicy: () => ({ replyMode: "mirror" }),
-    },
+    } as any,
     { id: "obj" },
   );
 
