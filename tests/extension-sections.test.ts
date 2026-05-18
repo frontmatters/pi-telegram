@@ -497,7 +497,7 @@ test("buildTelegramSettingsMenuReplyMarkup injects extension settings rows", asy
     }),
   );
 
-  const markup = buildTelegramSettingsMenuReplyMarkup(false, "manual", registry);
+  const markup = buildTelegramSettingsMenuReplyMarkup(false, "manual", "off", registry);
   const rows = markup.inline_keyboard;
 
   // First row: Main menu back
@@ -507,5 +507,6 @@ test("buildTelegramSettingsMenuReplyMarkup injects extension settings rows", asy
   assert.ok(rows[1][0].callback_data.startsWith("section:"));
   // Built-in rows follow extension settings
   assert.ok(rows[2][0].text.includes("Voice reply"));
-  assert.ok(rows[3][0].text.includes("Proactive push"));
+  assert.ok(rows[3][0].text.includes("Time"));
+  assert.ok(rows[4][0].text.includes("Proactive push"));
 });

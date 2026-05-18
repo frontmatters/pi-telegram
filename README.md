@@ -240,19 +240,18 @@ Import `registerTelegramSection()` from `@llblab/pi-telegram/lib/extension-secti
 
 ### Time context
 
-`telegram.json` can opt into a compact `[time]` line in Telegram-originated prompts so π has a wall-clock reference for requests such as "today", "now", or scheduling. It is off by default; invalid or missing timezones fall back to the host timezone.
+`telegram.json` can opt into a compact `[time]` line in Telegram-originated prompts so π has a wall-clock reference for requests such as "today", "now", or scheduling. It is off by default and uses the system timezone; the mode can also be changed from Settings → `🕒 Time`.
 
 ```json
 {
-  "timeInjection": {
-    "mode": "interval",
-    "intervalSeconds": 3600,
-    "timezone": "Europe/Berlin"
+  "time": {
+    "injectionMode": "interval",
+    "interval": 3600000
   }
 }
 ```
 
-Modes are `off`, `always`, and `interval`. `interval` rate-limits the time line per chat in memory, so back-to-back messages do not repeatedly spend context on the same timestamp.
+Modes are `off`, `always`, and `interval`. `interval` is measured in milliseconds and rate-limits the time line per chat in memory, so back-to-back messages do not repeatedly spend context on the same timestamp. When present, `[time]` is the final prompt-context section after attachments, handler outputs, and voice policy.
 
 ## Docs
 

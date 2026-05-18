@@ -4,14 +4,14 @@
  * Owns the formatted `[time]` line and the per-chat interval bookkeeping that decides when to emit it
  */
 
-import type { ResolvedTelegramTimeInjectionConfig } from "./config.ts";
+import type { ResolvedTelegramTimeConfig } from "./config.ts";
 
 export interface TimeInjectionRuntime {
   resolveLine: (chatId: number, now?: Date) => string | null;
 }
 
 export interface TimeInjectionRuntimeDeps {
-  getConfig: () => ResolvedTelegramTimeInjectionConfig;
+  getConfig: () => ResolvedTelegramTimeConfig;
   recordRuntimeEvent?: (
     category: string,
     error: unknown,
@@ -52,7 +52,7 @@ export function createTimeInjectionRuntime(
   return {
     resolveLine: (chatId, now = new Date()) => {
       const config = deps.getConfig();
-      if (config.mode === "off") return null;
+      if (config.injectionMode === "off") return null;
       let line: string;
       try {
         line = formatTelegramTimeInjectionLine(now, config.timezone);
@@ -62,12 +62,12 @@ export function createTimeInjectionRuntime(
         });
         return null;
       }
-      if (config.mode === "always") return line;
+      if (config.injectionMode === "always") return line;
       const previous = lastInjectedAt.get(chatId);
       const nowMs = now.getTime();
       if (
         previous !== undefined &&
-        nowMs - previous < config.intervalSeconds * 1000
+        nowMs - previous < config.interval
       ) {
         return null;
       }

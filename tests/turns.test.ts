@@ -61,16 +61,18 @@ test("Turn helpers omit [time] section by default", () => {
   assert.equal(prompt, "[telegram] hello");
 });
 
-test("Turn helpers inject [time] line after user text and before attachments", () => {
+test("Turn helpers inject [time] as the final context section", () => {
   const prompt = buildTelegramTurnPrompt({
     telegramPrefix: "[telegram]",
     rawText: "current message",
     files: [{ path: "/tmp/demo.png", fileName: "demo.png", isImage: true }],
+    handlerOutputs: ["transcript"],
+    voiceContext: { "reply mode": "manual" },
     timeLine: "2026-05-16 14:32:10 Europe/Berlin",
   });
   assert.match(
     prompt,
-    /^\[telegram\] current message\n\n\[time\] 2026-05-16 14:32:10 Europe\/Berlin\n\n\[attachments\] /,
+    /^\[telegram\] current message\n\n\[attachments\] \/tmp\n- \/demo\.png\n\n\[outputs\]\n- transcript\n\n\[voice\] reply mode: manual\n\n\[time\] 2026-05-16 14:32:10 Europe\/Berlin$/,
   );
 });
 

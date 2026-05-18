@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-- `[Time Injection]` Added optional `telegram.json` `timeInjection` prompt context for Telegram-originated turns. Modes are `off`, `always`, and per-chat `interval`; invalid or missing timezones fall back to the host timezone. The `[time]` line renders before attachments, handler outputs, and voice context.
+## 0.11.1: Time Context And Settings Polish
+
+- `[Time Context]` Added optional `telegram.json` `time` prompt context for Telegram-originated turns. `time.injectionMode` values are `off`, `always`, and per-chat `interval`; `time.interval` is stored in milliseconds and timezone comes from the system. The `[time]` line renders last after attachments, handler outputs, and voice context, and Settings exposes a `🕒 Time` mode selector.
+- `[Settings UI]` The proactive push row now uses `📌 Proactive push: on|off`, and proactive push, time, and voice reply submenus use matching emoji headings.
 
 ## 0.11.0: Voice Provider Platform
 

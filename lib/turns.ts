@@ -145,9 +145,6 @@ export function buildTelegramTurnPrompt(options: {
         ? `${prompt}\n${options.rawText}`
         : appendTelegramPromptText(prompt, options.rawText);
   }
-  if (options.timeLine) {
-    prompt = `${prompt}\n\n[time] ${options.timeLine}`;
-  }
   const promptFiles = options.promptFiles ?? options.files;
   prompt = appendTelegramAttachmentSection(prompt, promptFiles);
   prompt = appendTelegramListSection(
@@ -157,6 +154,9 @@ export function buildTelegramTurnPrompt(options: {
   );
   if (options.voiceContext) {
     prompt = appendTelegramVoiceContext(prompt, options.voiceContext);
+  }
+  if (options.timeLine) {
+    prompt = `${prompt}\n\n[time] ${options.timeLine}`;
   }
   return prompt;
 }

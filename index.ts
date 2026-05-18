@@ -114,6 +114,10 @@ export default function (pi: Pi.ExtensionAPI) {
     Config.createTelegramVoiceReplyModeConfiguredChecker(configStore);
   const setVoiceReplyMode =
     Config.createTelegramVoiceReplyModeSetter(configStore);
+  const getTimeInjectionMode =
+    Config.createTelegramTimeInjectionModeGetter(configStore);
+  const setTimeInjectionMode =
+    Config.createTelegramTimeInjectionModeSetter(configStore);
   const lockRuntime = Locks.createTelegramLockRuntime<Pi.ExtensionContext>();
   const lockOwnershipGuard =
     Locks.createTelegramLockOwnershipGuard(lockRuntime);
@@ -139,7 +143,7 @@ export default function (pi: Pi.ExtensionAPI) {
   });
   const recordRuntimeEvent = runtimeEvents.record;
   const timeInjectionRuntime = TimeInjection.createTimeInjectionRuntime({
-    getConfig: Config.createTelegramTimeInjectionConfigGetter(configStore),
+    getConfig: Config.createTelegramTimeConfigGetter(configStore),
     recordRuntimeEvent,
   });
   (globalThis as Record<string, unknown>)[
@@ -391,8 +395,10 @@ export default function (pi: Pi.ExtensionAPI) {
       isProactivePushEnabled,
       getVoiceReplyMode,
       isVoiceReplyModeConfigured,
+      getTimeInjectionMode,
       setProactivePushEnabled,
       setVoiceReplyMode,
+      setTimeInjectionMode,
     },
     sectionRegistry,
   );

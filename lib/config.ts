@@ -35,17 +35,16 @@ export interface TelegramOutboundHandlerConfig extends CommandTemplateObjectConf
   timeout?: number;
 }
 
-export type TelegramTimeInjectionMode = "off" | "always" | "interval";
+export type TelegramTimeMode = "off" | "always" | "interval";
 
-export interface TelegramTimeInjectionConfig {
-  mode?: TelegramTimeInjectionMode;
-  intervalSeconds?: number;
-  timezone?: string;
+export interface TelegramTimeConfig {
+  injectionMode?: TelegramTimeMode;
+  interval?: number;
 }
 
-export interface ResolvedTelegramTimeInjectionConfig {
-  mode: TelegramTimeInjectionMode;
-  intervalSeconds: number;
+export interface ResolvedTelegramTimeConfig {
+  injectionMode: TelegramTimeMode;
+  interval: number;
   timezone: string;
 }
 
@@ -64,7 +63,7 @@ export interface TelegramConfig {
     /** Whether to attach the provider's transcriptText as caption on voice messages */
     sendTranscript?: boolean;
   };
-  timeInjection?: TelegramTimeInjectionConfig;
+  time?: TelegramTimeConfig;
 }
 
 export interface TelegramConfigStore {
@@ -235,38 +234,45 @@ function getSystemTimezone(): string {
   }
 }
 
-function isValidTelegramTimeZone(timezone: string): boolean {
-  try {
-    new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date());
-    return true;
-  } catch {
-    return false;
-  }
+export function resolveTelegramTimeConfig(
+  raw: TelegramTimeConfig | undefined,
+): ResolvedTelegramTimeConfig {
+  const injectionMode: TelegramTimeMode =
+    raw?.injectionMode === "always" || raw?.injectionMode === "interval"
+      ? raw.injectionMode
+      : "off";
+  const interval =
+    typeof raw?.interval === "number" && raw.interval > 0
+      ? raw.interval
+      : 60 * 60 * 1000;
+  const timezone = getSystemTimezone();
+  return { injectionMode, interval, timezone };
 }
 
-export function resolveTelegramTimeInjectionConfig(
-  raw: TelegramTimeInjectionConfig | undefined,
-): ResolvedTelegramTimeInjectionConfig {
-  const mode: TelegramTimeInjectionMode =
-    raw?.mode === "always" || raw?.mode === "interval" ? raw.mode : "off";
-  const intervalSeconds =
-    typeof raw?.intervalSeconds === "number" && raw.intervalSeconds > 0
-      ? raw.intervalSeconds
-      : 3600;
-  const systemTimezone = getSystemTimezone();
-  const timezone =
-    typeof raw?.timezone === "string" &&
-    raw.timezone.length > 0 &&
-    isValidTelegramTimeZone(raw.timezone)
-      ? raw.timezone
-      : systemTimezone;
-  return { mode, intervalSeconds, timezone };
-}
-
-export function createTelegramTimeInjectionConfigGetter(
+export function createTelegramTimeConfigGetter(
   configStore: Pick<TelegramConfigStore, "get">,
-): () => ResolvedTelegramTimeInjectionConfig {
-  return () => resolveTelegramTimeInjectionConfig(configStore.get().timeInjection);
+): () => ResolvedTelegramTimeConfig {
+  return () => resolveTelegramTimeConfig(configStore.get().time);
+}
+
+export function createTelegramTimeInjectionModeGetter(
+  configStore: Pick<TelegramConfigStore, "get">,
+): () => TelegramTimeMode {
+  return () => resolveTelegramTimeConfig(configStore.get().time).injectionMode;
+}
+
+export function createTelegramTimeInjectionModeSetter(
+  configStore: Pick<TelegramConfigStore, "get" | "set" | "persist">,
+): (injectionMode: TelegramTimeMode) => Promise<void> {
+  return async (injectionMode) => {
+    const current = configStore.get();
+    const next = {
+      ...current,
+      time: { ...(current.time ?? {}), injectionMode },
+    };
+    configStore.set(next);
+    await configStore.persist(next);
+  };
 }
 
 export function createTelegramProactivePushChatIdGetter(deps: {

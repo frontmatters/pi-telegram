@@ -12,6 +12,8 @@ import test from "node:test";
 import type { TelegramConfig } from "../lib/config.ts";
 import {
   createTelegramConfigStore,
+  createTelegramTimeInjectionModeGetter,
+  createTelegramTimeInjectionModeSetter,
   createTelegramUserPairingRuntime,
   createTelegramVoiceReplyModeConfiguredChecker,
   createTelegramVoiceReplyModeGetter,
@@ -99,6 +101,28 @@ test("Telegram voice reply mode setter persists telegram.json", async () => {
   assert.equal(store.get().voice, undefined);
   assert.deepEqual(await readTelegramConfig(configPath), {
     botToken: "123:abc",
+  });
+});
+
+test("Telegram time injection mode setter persists telegram.json", async () => {
+  const agentDir = await mkdtemp(join(tmpdir(), "pi-telegram-time-mode-"));
+  const configPath = join(agentDir, "telegram.json");
+  const store = createTelegramConfigStore({
+    initialConfig: { botToken: "123:abc", time: { interval: 5000 } },
+    agentDir,
+    configPath,
+  });
+  const getMode = createTelegramTimeInjectionModeGetter(store);
+  const setMode = createTelegramTimeInjectionModeSetter(store);
+
+  assert.equal(getMode(), "off");
+
+  await setMode("interval");
+
+  assert.equal(getMode(), "interval");
+  assert.deepEqual(await readTelegramConfig(configPath), {
+    botToken: "123:abc",
+    time: { interval: 5000, injectionMode: "interval" },
   });
 });
 
