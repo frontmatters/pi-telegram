@@ -86,6 +86,30 @@ test("Status bar text renders bridge connection and queue states", () => {
   assert.equal(
     buildTelegramStatusBarText(theme, {
       hasBotToken: true,
+      pollingActive: false,
+      paired: true,
+      compactionInProgress: false,
+      processing: true,
+      processingStatus: "queued",
+      queuedStatus: " +2",
+    }),
+    "<accent>telegram</accent> <muted>disconnected</muted><success> +2</success>",
+  );
+  assert.equal(
+    buildTelegramStatusBarText(theme, {
+      hasBotToken: true,
+      pollingActive: true,
+      paired: false,
+      compactionInProgress: false,
+      processing: true,
+      processingStatus: "queued",
+      queuedStatus: " +1",
+    }),
+    "<accent>telegram</accent> <warning>awaiting pairing</warning><success> +1</success>",
+  );
+  assert.equal(
+    buildTelegramStatusBarText(theme, {
+      hasBotToken: true,
       pollingActive: true,
       paired: true,
       compactionInProgress: false,
