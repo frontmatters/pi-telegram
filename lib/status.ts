@@ -529,15 +529,15 @@ export function buildTelegramStatusBarText(
   if (state.error) {
     return `${label} ${theme.fg("error", "error")} ${theme.fg("muted", state.error)}`;
   }
-  if (!state.hasBotToken)
-    return `${label} ${theme.fg("muted", "not configured")}`;
-  if (!state.pollingActive)
-    return `${label} ${theme.fg("muted", "disconnected")}`;
-  if (!state.paired)
-    return `${label} ${theme.fg("warning", "awaiting pairing")}`;
   const queued = state.queuedStatus
     ? theme.fg("success", state.queuedStatus)
     : "";
+  if (!state.hasBotToken)
+    return `${label} ${theme.fg("muted", "not configured")}${queued}`;
+  if (!state.pollingActive)
+    return `${label} ${theme.fg("muted", "disconnected")}${queued}`;
+  if (!state.paired)
+    return `${label} ${theme.fg("warning", "awaiting pairing")}${queued}`;
   if (state.compactionInProgress) {
     return `${label} ${theme.fg("warning", "compacting")}${queued}`;
   }
