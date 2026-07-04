@@ -21,7 +21,7 @@ export type TelegramSettingsMenuReplyMarkup = TelegramInlineKeyboardMarkup;
 
 export interface TelegramSettingsStateDeps {
   isProactivePushEnabled: () => boolean;
-  areRichDraftPreviewsEnabled: () => boolean;
+  areDraftPreviewsEnabled: () => boolean;
   getAssistantRenderingMode: () => TelegramAssistantRenderingMode;
   getTimeInjectionMode: () => TelegramTimeMode;
   getVoiceReplyMode: () => TelegramVoiceReplyMode;
@@ -30,7 +30,7 @@ export interface TelegramSettingsStateDeps {
 
 export interface TelegramSettingsMutationDeps extends TelegramSettingsStateDeps {
   setProactivePushEnabled: (enabled: boolean) => Promise<void>;
-  setRichDraftPreviewsEnabled: (enabled: boolean) => Promise<void>;
+  setDraftPreviewsEnabled: (enabled: boolean) => Promise<void>;
   setAssistantRenderingMode: (
     mode: TelegramAssistantRenderingMode,
   ) => Promise<void>;
@@ -311,7 +311,7 @@ export async function openTelegramSettingsMenu<
     buildTelegramSettingsMenuText(),
     buildTelegramSettingsMenuReplyMarkup(
       deps.isProactivePushEnabled(),
-      deps.areRichDraftPreviewsEnabled(),
+      deps.areDraftPreviewsEnabled(),
       deps.getAssistantRenderingMode(),
       deps.getVoiceReplyMode(),
       deps.getTimeInjectionMode(),
@@ -431,7 +431,7 @@ export async function updateTelegramSettingsMenuMessage(
     buildTelegramSettingsMenuText(),
     buildTelegramSettingsMenuReplyMarkup(
       deps.isProactivePushEnabled(),
-      deps.areRichDraftPreviewsEnabled(),
+      deps.areDraftPreviewsEnabled(),
       deps.getAssistantRenderingMode(),
       deps.getVoiceReplyMode(),
       deps.getTimeInjectionMode(),
@@ -454,7 +454,7 @@ export async function updateProactivePushSettingsMessage(
 export async function updateDraftPreviewsSettingsMessage(
   deps: TelegramSettingsMenuCallbackDeps,
 ): Promise<void> {
-  const enabled = deps.areRichDraftPreviewsEnabled();
+  const enabled = deps.areDraftPreviewsEnabled();
   await deps.updateSettingsMessage(
     buildDraftPreviewsSettingsText(enabled),
     buildDraftPreviewsSettingsReplyMarkup(enabled),
@@ -577,7 +577,7 @@ export async function handleTelegramSettingsMenuCallbackAction(
     data === "settings:set:rich-drafts:off"
   ) {
     const enabled = data.endsWith(":on");
-    await deps.setRichDraftPreviewsEnabled(enabled);
+    await deps.setDraftPreviewsEnabled(enabled);
     await updateDraftPreviewsSettingsMessage(deps);
     await deps.answerCallbackQuery(
       callbackQueryId,
@@ -624,7 +624,7 @@ export function createTelegramSettingsMenuRuntime<
         {
           getModelMenuState: () => deps.getModelMenuState(chatId, ctx),
           isProactivePushEnabled: deps.isProactivePushEnabled,
-          areRichDraftPreviewsEnabled: deps.areRichDraftPreviewsEnabled,
+          areDraftPreviewsEnabled: deps.areDraftPreviewsEnabled,
           getAssistantRenderingMode: deps.getAssistantRenderingMode,
           getVoiceReplyMode: deps.getVoiceReplyMode,
           isVoiceReplyModeConfigured: deps.isVoiceReplyModeConfigured,
@@ -644,7 +644,7 @@ export function createTelegramSettingsMenuRuntime<
       updateTelegramSettingsMenuMessage(
         {
           isProactivePushEnabled: deps.isProactivePushEnabled,
-          areRichDraftPreviewsEnabled: deps.areRichDraftPreviewsEnabled,
+          areDraftPreviewsEnabled: deps.areDraftPreviewsEnabled,
           getAssistantRenderingMode: deps.getAssistantRenderingMode,
           getVoiceReplyMode: deps.getVoiceReplyMode,
           isVoiceReplyModeConfigured: deps.isVoiceReplyModeConfigured,
@@ -691,7 +691,7 @@ export function createTelegramSettingsMenuRuntime<
           query.data === "settings:set:rich-drafts:off"
         ) {
           const enabled = query.data.endsWith(":on");
-          await deps.setRichDraftPreviewsEnabled(enabled);
+          await deps.setDraftPreviewsEnabled(enabled);
           await deps.answerCallbackQuery(
             query.id,
             `Draft previews ${enabled ? "enabled" : "disabled"}`,
@@ -736,13 +736,13 @@ export function createTelegramSettingsMenuRuntime<
       }
       return handleTelegramSettingsMenuCallbackAction(query.id, query.data, {
         isProactivePushEnabled: deps.isProactivePushEnabled,
-        areRichDraftPreviewsEnabled: deps.areRichDraftPreviewsEnabled,
+        areDraftPreviewsEnabled: deps.areDraftPreviewsEnabled,
         getAssistantRenderingMode: deps.getAssistantRenderingMode,
         getVoiceReplyMode: deps.getVoiceReplyMode,
         isVoiceReplyModeConfigured: deps.isVoiceReplyModeConfigured,
         getTimeInjectionMode: deps.getTimeInjectionMode,
         setProactivePushEnabled: deps.setProactivePushEnabled,
-        setRichDraftPreviewsEnabled: deps.setRichDraftPreviewsEnabled,
+        setDraftPreviewsEnabled: deps.setDraftPreviewsEnabled,
         setAssistantRenderingMode: deps.setAssistantRenderingMode,
         setVoiceReplyMode: deps.setVoiceReplyMode,
         setTimeInjectionMode: deps.setTimeInjectionMode,

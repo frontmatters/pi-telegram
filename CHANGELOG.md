@@ -1,10 +1,18 @@
 # Changelog
 
+## 0.19.2: Draft And Rendering Isolation Hotfix
+
+- `[Config]` Grouped assistant answer output under `assistant: { rendering, draftPreviews }`, while still reading and cleaning up legacy `assistantRendering`, `draftPreviews`, and `richDraftPreviews`. Impact: config vocabulary now matches the feature boundary; draft visibility and final rendering live together without implying that previews are inherently Rich Markdown.
+- `[Preview]` Hard-gated preview state creation behind the Draft previews setting. Impact: when Draft previews are off, `message_start` / `message_update` cannot create or flush draft frames; Telegram should show only native active status until the final answer.
+- `[Preview]` Aligned enabled draft previews with the selected final renderer: `assistant.rendering: "rich"` uses `sendRichMessageDraft`, while `assistant.rendering: "html"` uses legacy `sendMessageDraft` with HTML. Impact: the visible draft no longer morphs from Native Rich Markdown into legacy HTML at finalization.
+- `[Rendering]` Removed the thread-reply special case that forced anchored thread assistant replies through legacy Markdown-to-HTML. Impact: `assistant.rendering: "rich"` now uses native Rich Markdown for final assistant replies in Threaded Mode too, while `assistant.rendering: "html"` remains the only path that selects legacy HTML rendering.
+- `[Tests]` Updated reply regressions to assert native Rich Markdown delivery for anchored thread replies.
+
 ## 0.19.1: Settings Layer Hotfix
 
 - `[Settings]` Split the overloaded Rich Draft setting into two independent controls: `Draft previews` for live `sendRichMessageDraft` streaming and `Assistant rendering` for final-answer delivery mode. Impact: operators can hide/show in-progress drafts without changing how final Markdown is rendered.
 - `[Rendering]` Added persisted `assistantRendering: "rich" | "html"`, defaulting to Native Rich Markdown and allowing legacy Markdown-to-HTML final assistant replies when selected. Impact: renderer compatibility is explicit instead of being conflated with preview visibility.
-- `[Preview]` Kept `richDraftPreviews` as the stored draft-preview flag for compatibility, but renamed the Settings UI to `Draft previews`. Impact: existing configs keep working while the product vocabulary matches the Bot API layer.
+- `[Preview]` Kept `richDraftPreviews` as the stored draft-preview flag for compatibility, but renamed the Settings UI to `Draft previews`. Impact: existing configs keep working while the product vocabulary moves toward the preview feature boundary.
 - `[Validation]` Updated menu/settings/reply regressions for the two-axis configuration model.
 
 ## 0.19.0: Telegram Companion Hub

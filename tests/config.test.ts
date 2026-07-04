@@ -179,18 +179,36 @@ test("Telegram settings setters reload before scoped writes to preserve shared c
 
   await setVoiceMode("mirror");
   await controls.setProactivePushEnabled(true);
-  await controls.setRichDraftPreviewsEnabled(true);
+  await controls.setDraftPreviewsEnabled(true);
   await controls.setAssistantRenderingMode("html");
 
   assert.deepEqual(await readTelegramConfig(configPath), {
     botToken: "123:abc",
     proactivePush: true,
-    richDraftPreviews: true,
-    assistantRendering: "html",
+    assistant: { draftPreviews: true, rendering: "html" },
     voice: { replyMode: "mirror" },
   });
   assert.equal(controls.getAssistantRenderingMode(), "html");
   assert.deepEqual(secondStore.get().voice, { replyMode: "mirror" });
+});
+
+test("Telegram draft preview config reads and migrates legacy rich flag", async () => {
+  const agentDir = await mkdtemp(join(tmpdir(), "pi-telegram-draft-legacy-"));
+  const configPath = join(agentDir, "telegram.json");
+  await writeTelegramConfig(agentDir, configPath, {
+    botToken: "123:abc",
+    richDraftPreviews: true,
+  });
+  const store = createTelegramConfigStore({ agentDir, configPath });
+  await store.load();
+  const controls = createTelegramConfigControls(store);
+
+  assert.equal(controls.areDraftPreviewsEnabled(), true);
+  await controls.setDraftPreviewsEnabled(false);
+  assert.deepEqual(await readTelegramConfig(configPath), {
+    botToken: "123:abc",
+    assistant: { draftPreviews: false },
+  });
 });
 
 test("Telegram settings menu callbacks persist voice and time settings to telegram.json", async () => {
@@ -249,7 +267,7 @@ test("Telegram settings menu callbacks persist voice and time settings to telegr
     await runtime.handleCallbackQuery(
       {
         id: "drafts",
-        data: "settings:set:rich-drafts:on",
+        data: "settings:set:draft-previews:on",
         message: { message_id: state.messageId },
       },
       {},
@@ -258,7 +276,7 @@ test("Telegram settings menu callbacks persist voice and time settings to telegr
   );
   assert.deepEqual(await readTelegramConfig(configPath), {
     botToken: "123:abc",
-    richDraftPreviews: true,
+    assistant: { draftPreviews: true },
     voice: { replyMode: "mirror" },
     time: { injectionMode: "always" },
   });

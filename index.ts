@@ -478,7 +478,9 @@ export default function (pi: Pi.ExtensionAPI) {
       recordRuntimeEvent,
     });
   const nativeMarkdownDraftSender =
-    TelegramApi.createTelegramNativeMarkdownDraftSender({
+    TelegramApi.createTelegramAssistantDraftSender({
+      getAssistantRenderingMode: configControls.getAssistantRenderingMode,
+      renderMarkdownToHtmlDraft: Replies.renderTelegramMarkdownToHtmlDraft,
       sendMessageDraft,
       sendRichMessageDraft,
     });
@@ -488,7 +490,7 @@ export default function (pi: Pi.ExtensionAPI) {
     getMessageText: Replies.getAgentMessageText,
     getDefaultReplyToMessageId: activeTurnRuntime.getReplyToMessageId,
     sendDraft: nativeMarkdownDraftSender,
-    canSend: configControls.areRichDraftPreviewsEnabled,
+    canSend: configControls.areDraftPreviewsEnabled,
     sendMarkdownReply,
     recordRuntimeEvent,
     ...replyTransport,

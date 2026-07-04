@@ -202,7 +202,7 @@ Most controls live in Pi commands or the Telegram menu. Environment variables re
 | Inbound file limit | `PI_TELEGRAM_INBOUND_FILE_MAX_BYTES`, `TELEGRAM_MAX_FILE_SIZE_BYTES` |
 | Outbound attachment limit | `PI_TELEGRAM_OUTBOUND_ATTACHMENT_MAX_BYTES`, `TELEGRAM_MAX_ATTACHMENT_SIZE_BYTES` |
 
-Defaults are chosen for ordinary private-bot use: saved config in `~/.pi/agent`, inbound temp files in `~/.pi/agent/tmp/telegram`, `assistantRendering: "rich"` for final replies, `richDraftPreviews: false` for no live draft text by default, and native Telegram active status for long-running turns.
+Defaults are chosen for ordinary private-bot use: saved config in `~/.pi/agent`, inbound temp files in `~/.pi/agent/tmp/telegram`, `assistant: { rendering: "rich", draftPreviews: false }` for assistant answer output, and native Telegram active status for long-running turns.
 
 ## Extension Platform
 

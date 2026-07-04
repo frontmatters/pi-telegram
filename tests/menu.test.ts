@@ -2326,13 +2326,13 @@ test("Settings menu persists voice mode even when the menu message state expired
       answers.push(text ?? "");
     },
     isProactivePushEnabled: () => false,
-    areRichDraftPreviewsEnabled: () => false,
+    areDraftPreviewsEnabled: () => false,
     getAssistantRenderingMode: () => "rich" as const,
     getTimeInjectionMode: () => "hidden",
     getVoiceReplyMode: () => mode ?? "manual",
     isVoiceReplyModeConfigured: () => configured,
     setProactivePushEnabled: async () => {},
-    setRichDraftPreviewsEnabled: async () => {},
+    setDraftPreviewsEnabled: async () => {},
     setAssistantRenderingMode: async () => {},
     setVoiceReplyMode: async (nextMode) => {
       mode = nextMode;
