@@ -59,7 +59,15 @@ export interface TelegramConfig {
   attachmentHandlers?: TelegramInboundHandlerConfig[];
   outboundHandlers?: TelegramOutboundHandlerConfig[];
   proactivePush?: boolean;
+  assistant?: {
+    draftPreviews?: boolean;
+    rendering?: TelegramAssistantRenderingMode;
+  };
+  /** @deprecated use assistant.draftPreviews */
+  draftPreviews?: boolean;
+  /** @deprecated use assistant.draftPreviews */
   richDraftPreviews?: boolean;
+  /** @deprecated use assistant.rendering */
   assistantRendering?: TelegramAssistantRenderingMode;
   voice?: {
     replyMode?: "manual" | "mirror" | "always";
@@ -263,18 +271,34 @@ export function createTelegramProactivePushSetter(
   };
 }
 
-export function createTelegramRichDraftPreviewsChecker(
+export function createTelegramDraftPreviewsChecker(
   configStore: Pick<TelegramConfigStore, "get">,
 ): () => boolean {
-  return () => configStore.get().richDraftPreviews ?? false;
+  return () => {
+    const config = configStore.get();
+    return (
+      config.assistant?.draftPreviews ??
+      config.draftPreviews ??
+      config.richDraftPreviews ??
+      false
+    );
+  };
 }
 
-export function createTelegramRichDraftPreviewsSetter(
+export function createTelegramDraftPreviewsSetter(
   configStore: TelegramMutableConfigStore,
 ): (enabled: boolean) => Promise<void> {
   return async (enabled) => {
     await loadLatestTelegramConfig(configStore);
-    const config = { ...configStore.get(), richDraftPreviews: enabled };
+    const {
+      draftPreviews: _legacyDraftPreviews,
+      richDraftPreviews: _legacyRichDraftPreviews,
+      ...current
+    } = configStore.get();
+    const config = {
+      ...current,
+      assistant: { ...current.assistant, draftPreviews: enabled },
+    };
     configStore.set(config);
     await configStore.persist(config);
   };
@@ -284,7 +308,8 @@ export function createTelegramAssistantRenderingModeGetter(
   configStore: Pick<TelegramConfigStore, "get">,
 ): () => TelegramAssistantRenderingMode {
   return () => {
-    const mode = configStore.get().assistantRendering;
+    const config = configStore.get();
+    const mode = config.assistant?.rendering ?? config.assistantRendering;
     return mode === "html" ? "html" : "rich";
   };
 }
@@ -294,7 +319,12 @@ export function createTelegramAssistantRenderingModeSetter(
 ): (mode: TelegramAssistantRenderingMode) => Promise<void> {
   return async (mode) => {
     await loadLatestTelegramConfig(configStore);
-    const config = { ...configStore.get(), assistantRendering: mode };
+    const { assistantRendering: _legacyAssistantRendering, ...current } =
+      configStore.get();
+    const config = {
+      ...current,
+      assistant: { ...current.assistant, rendering: mode },
+    };
     configStore.set(config);
     await configStore.persist(config);
   };
@@ -435,10 +465,8 @@ export function createTelegramConfigControls(
   return {
     isProactivePushEnabled: createTelegramProactivePushChecker(configStore),
     setProactivePushEnabled: createTelegramProactivePushSetter(configStore),
-    areRichDraftPreviewsEnabled:
-      createTelegramRichDraftPreviewsChecker(configStore),
-    setRichDraftPreviewsEnabled:
-      createTelegramRichDraftPreviewsSetter(configStore),
+    areDraftPreviewsEnabled: createTelegramDraftPreviewsChecker(configStore),
+    setDraftPreviewsEnabled: createTelegramDraftPreviewsSetter(configStore),
     getAssistantRenderingMode:
       createTelegramAssistantRenderingModeGetter(configStore),
     setAssistantRenderingMode:

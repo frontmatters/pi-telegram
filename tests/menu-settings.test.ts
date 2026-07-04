@@ -95,12 +95,12 @@ test("Settings callback action mutates voice, time, and proactive settings", asy
     getVoiceReplyMode: () => "manual" as const,
     isVoiceReplyModeConfigured: () => true,
     getTimeInjectionMode: () => "hidden" as const,
-    areRichDraftPreviewsEnabled: () => false,
+    areDraftPreviewsEnabled: () => false,
     getAssistantRenderingMode: () => "rich" as const,
     setProactivePushEnabled: async (enabled: boolean) => {
       calls.push(`proactive:${enabled}`);
     },
-    setRichDraftPreviewsEnabled: async (enabled: boolean) => {
+    setDraftPreviewsEnabled: async (enabled: boolean) => {
       calls.push(`draft-previews:${enabled}`);
     },
     setAssistantRenderingMode: async (mode: "rich" | "html") => {
@@ -202,12 +202,12 @@ test("Settings runtime opens menus and applies stale-message fallback toggles", 
     getVoiceReplyMode: () => "manual",
     isVoiceReplyModeConfigured: () => true,
     getTimeInjectionMode: () => "hidden",
-    areRichDraftPreviewsEnabled: () => false,
+    areDraftPreviewsEnabled: () => false,
     getAssistantRenderingMode: () => "rich",
     setProactivePushEnabled: async (enabled) => {
       calls.push(`proactive:${enabled}`);
     },
-    setRichDraftPreviewsEnabled: async (enabled) => {
+    setDraftPreviewsEnabled: async (enabled) => {
       calls.push(`draft-previews:${enabled}`);
     },
     setAssistantRenderingMode: async (mode) => {
