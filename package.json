@@ -1,20 +1,19 @@
 {
-  "name": "@llblab/pi-telegram",
-  "version": "0.19.3",
-  "private": false,
-  "publishConfig": {
-    "access": "public"
-  },
-  "description": "Telegram runtime adapter for Pi",
+  "name": "@frontmatters/pi-telegram",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Frontmatters Telegram runtime adapter for Pi — fork of @llblab/pi-telegram",
   "keywords": [
     "pi-package",
     "pi",
     "telegram",
     "bot",
-    "extension"
+    "extension",
+    "frontmatters"
   ],
   "type": "module",
   "license": "MIT",
+  "author": "Michael Mijnals / Frontmatters",
   "repository": {
     "type": "git",
     "url": "https://github.com/llblab/pi-telegram.git"
@@ -23,6 +22,7 @@
   "bugs": {
     "url": "https://github.com/llblab/pi-telegram/issues"
   },
+  "funding": null,
   "engines": {
     "node": ">=22.19.0"
   },
@@ -38,11 +38,8 @@
     "api/",
     "lib/",
     "README.md",
-    "AGENTS.md",
-    "BACKLOG.md",
-    "CHANGELOG.md",
-    "docs/",
-    "banner.png"
+    "LICENSE",
+    "docs/"
   ],
   "exports": {
     ".": "./index.ts",
@@ -58,8 +55,7 @@
   "pi": {
     "extensions": [
       "./index.ts"
-    ],
-    "image": "https://github.com/llblab/pi-telegram/raw/main/banner.png"
+    ]
   },
   "peerDependencies": {
     "@earendil-works/pi-agent-core": "*",

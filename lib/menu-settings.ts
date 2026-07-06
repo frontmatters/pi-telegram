@@ -196,7 +196,7 @@ export function buildVoiceReplyModeSettingsText(
       getVoiceReplyModeSetting(mode, configured),
     )}</code>`,
     "",
-    "Controls when pi-telegram converts assistant text replies into Telegram voice messages.",
+    "Controls when Frontmatters Telegram converts assistant text replies into Telegram voice messages.",
     "",
     "<code>-</code> <code>hidden</code> (default): same behavior as 'manual', but no voice policy is added to prompt context.",
     "<code>-</code> <code>manual</code>: agent decides; explicit 'telegram_voice' markup still works and reply mode is visible in prompt context.",

@@ -311,7 +311,7 @@ export interface TelegramBridgeCommandRegistrationDeps {
 }
 
 function formatTelegramTakeoverTitle(ctx: ExtensionCommandContext): string {
-  return ctx.ui.theme.fg("accent", "pi-telegram");
+  return ctx.ui.theme.fg("accent", "Frontmatters");
 }
 
 function formatTelegramTakeoverPrompt(
@@ -847,7 +847,7 @@ export interface TelegramCommandRuntimeDeps<
 }
 
 export const TELEGRAM_APP_MENU_INTRO_HTML = [
-  "<b>Pi Telegram</b>",
+  "<b>Frontmatters</b>",
   "",
   `${formatTelegramCommandEmojiPrefix("start")}/start — Open menu / Pair bridge`,
   `${formatTelegramCommandEmojiPrefix("compact")}/compact — Compact current session`,
@@ -887,7 +887,7 @@ function buildTelegramAppMenuIntroHtml(): string {
   const extensionLines = buildTelegramExtensionCommandMenuLines();
   if (extensionLines.length === 0) return TELEGRAM_APP_MENU_INTRO_HTML;
   return [
-    "<b>Pi Telegram</b>",
+    "<b>Frontmatters</b>",
     "",
     `${formatTelegramCommandEmojiPrefix("start")}/start — Open menu / Pair bridge`,
     `${formatTelegramCommandEmojiPrefix("compact")}/compact — Compact current session`,
