@@ -7,23 +7,21 @@
 ## Install (local fork)
 
 ```bash
-pi install /Users/mistermeneer/Developer/_work/eigen/pi-frontmatters-telegram
-```
-
-Or from this folder:
-
-```bash
-pi install .
+pi install ./path/to/pi-frontmatters-telegram
+# or absolute:
+pi install /absolute/path/to/pi-frontmatters-telegram
 ```
 
 ## Configure
 
 ### 1. Telegram bot
 
-Bot already exists: **@FrontmattersBot**. Token stored in macOS Keychain via `secrets-helper`:
+Create your own bot via [@BotFather](https://t.me/BotFather) — `/newbot`, pick a name and username, copy the bot token.
+
+Store the token in your macOS Keychain via [secrets-helper](https://github.com/frontmatters/secrets-helper):
 
 ```bash
-secrets get dev-config TELEGRAM_BOT_FRONTMATTERS
+secrets add dev-config TELEGRAM_BOT_TOKEN "<your-bot-token>"
 ```
 
 ### 2. Pi setup
@@ -38,7 +36,7 @@ Paste the bot token when prompted. Config is stored in `~/.pi/agent/telegram.jso
 
 > Tip — prefill from keychain:
 > ```bash
-> TELEGRAM_BOT_TOKEN=$(secrets get dev-config TELEGRAM_BOT_FRONTMATTERS) pi
+> TELEGRAM_BOT_TOKEN=$(secrets get dev-config TELEGRAM_BOT_TOKEN) pi
 > ```
 > `/telegram-setup` will pick it up automatically.
 
@@ -52,7 +50,7 @@ The connected Pi instance owns Telegram polling.
 
 ### 4. Pair your Telegram account
 
-Open the DM with **@FrontmattersBot** in Telegram and send:
+Open the DM with **your bot** in Telegram and send:
 
 ```text
 /start
